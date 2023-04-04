@@ -1,60 +1,69 @@
 "use strict";
 
 import { oppoStatus } from "../data/oppoStatus.js";
+import { getElement } from "../utils/getElement.js";
+import { convertKeysToLowerCase } from "../utils/convertKeysToLowerCase.js";
 
 const FormComponent = class {
-  constructor() {}
-  start() {
-    const form = document.querySelector("form");
-    const select = document.querySelector('[name="status"]');
-    const input = document.querySelector('[name="success"]');
-    const outputValues = [];
+  constructor(oppoStatus, form = "form", select = "status", input = "success") {
+    if (!oppoStatus && oppoStatus.length > 0) throw new Error("Array is empty");
 
-    this.addSelectOptions(select);
-    this.filterdSelectedValue(select, input, outputValues);
-    this.formSubmitHandler(form, outputValues);
+    this.oppoStatus = oppoStatus;
+    this.form = document.querySelector(form);
+    this.select = getElement(select);
+    this.input = getElement(input);
+  }
+  outputValue = {};
+
+  start() {
+    this.setOutputValue(this.oppoStatus[0]);
+    this.addSelectOptions();
+    this.filterdSelectedValue();
+    this.formSubmitHandler();
   }
 
-  addSelectOptions(select) {
-    oppoStatus.forEach((item) => {
+  addSelectOptions() {
+    this.oppoStatus.forEach((item) => {
       const option = document.createElement("option");
       option.value = item.K_OPPO_STATUS;
       option.textContent = item.STATUS;
-      select.appendChild(option);
+      this.select.appendChild(option);
     });
   }
 
-  filterdSelectedValue(select, input, outputValues) {
-    select.addEventListener("change", (event) => {
+  filterdSelectedValue() {
+    this.select.addEventListener("change", (event) => {
       const selectedValue = +event.target.value;
-      const filteredSelectedValue = oppoStatus.find(
+      const filteredSelectedValue = this.oppoStatus.find(
         (item) => item.K_OPPO_STATUS === selectedValue
       );
-      const { K_OPPO_STATUS, ...selectedDataObj } = filteredSelectedValue;
-      input.value = selectedDataObj.SUCCESS;
-      outputValues.push(selectedDataObj);
+      this.setOutputValue(filteredSelectedValue);
     });
   }
 
-  formSubmitHandler(form, outputValues) {
-    form.addEventListener("submit", (e) => {
+  formSubmitHandler() {
+    this.form.addEventListener("submit", (e) => {
       e.preventDefault();
       const output = document.querySelector(".output");
-      const outputObj = outputValues[0];
-      const status = outputObj.STATUS.split(".").shift();
-      outputObj.STATUS = +status;
-      const lowerKeysObj = Object.entries(outputObj).reduce(
-        (acc, [key, value]) => {
-          acc[key.toLowerCase()] = value;
-          return acc;
-        },
-        {}
+      const status = this.outputValue.STATUS.split(".").shift();
+      this.outputValue.STATUS = +status;
+      const htmlOutputValue = JSON.stringify(
+        convertKeysToLowerCase(this.outputValue)
       );
-      const htmlOutputValue = JSON.stringify(lowerKeysObj);
       output.innerHTML = htmlOutputValue;
     });
   }
+
+  setOutputValue({ K_OPPO_STATUS, ...selectedDataObj }) {
+    this.input.value = selectedDataObj.SUCCESS;
+    this.outputValue = selectedDataObj;
+  }
 };
 
-const fc = new FormComponent();
-fc.start();
+try {
+  const fc = new FormComponent(oppoStatus, "form", "status", "success");
+  fc.start();
+} catch (error) {
+  // ...pass onto logger service
+  console.error(error);
+}
