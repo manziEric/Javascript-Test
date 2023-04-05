@@ -1,4 +1,4 @@
-"use script";
+"use strict";
 
 export const convertKeysToLowerCase = (outputValue) =>
   Object.fromEntries(
